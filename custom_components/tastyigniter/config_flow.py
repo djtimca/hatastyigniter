@@ -41,7 +41,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
-                await self.async_set_unique_id(user_input[f"{CONF_USERNAME}_{CONF_HOST}"])
+                await self.async_set_unique_id(f"{username}_{domain}")
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(title=f"TastyIgniter - {CONF_HOST}", data=user_input)
 
@@ -49,7 +49,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_HOST): str,
+                    vol.Required(CONF_USERNAME): str,
                     vol.Required(CONF_PASSWORD): str,
                     vol.Required(CONF_HOST): str,
                 }

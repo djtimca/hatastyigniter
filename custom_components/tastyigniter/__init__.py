@@ -111,13 +111,13 @@ class TastyIgniterCoordinator(DataUpdateCoordinator):
         """Fetch data from TastyIgniter."""
         try:
             _LOGGER.debug("Updating the coordinator data.")
-            locations = await self.api.get_enabled_locations()
+            locations = await self.api.get_locations()
             received_orders = await self.api.get_received_orders()
-            r_orders = []
+            r_orders = {}
 
             for order in received_orders:
                 """Structure the dict for easy alerts."""
-                r_orders.append({order["location_id"]:order})
+                r_orders[order["location_id"]] = order
 
             return {
                 "locations": locations,

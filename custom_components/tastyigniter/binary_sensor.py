@@ -27,8 +27,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         sensors.append(
             TastyIgniterSensor(
                 coordinator,
-                location["location_name"],
-                location["location_id"],
+                location,
                 "mdi:food",
                 "ti_location",
             )
@@ -43,20 +42,28 @@ class TastyIgniterSensor(BinarySensorEntity):
     def __init__(
         self, 
         coordinator: TastyIgniterCoordinator, 
-        name: str, 
-        entity_id: str, 
+        location: dict,
         icon: str,
         device_identifier: str,
         ):
         """Initialize Entities."""
 
-        self._name = name
-        self._unique_id = f"ti_{entity_id}"
-        self._location_id = entity_id
+        self._name = location["location_name"]
+        self._location_id = location["location_id"]
+        self._unique_id = f"ti_{self._location_id}"
         self._state = None
         self._icon = icon
         self._device_identifier = device_identifier
         self.coordinator = coordinator
+
+        telephone = location["location_telephone"].replace("-","")
+        telephone = telephone.replace(" ","")
+        if len(telephone) == 10:
+            telephone = f"+1{telephone}"
+        else:
+            telephone = ""
+
+        self.attrs = {"phone":telephone}
 
     @property
     def should_poll(self) -> bool:
@@ -84,6 +91,11 @@ class TastyIgniterSensor(BinarySensorEntity):
         return self._icon
 
     @property
+    def device_state_attributes(self):
+        """Return the attributes."""
+        return self.attrs
+
+    @property
     def device_info(self):
         """Define the device based on device_identifier."""
 
@@ -101,8 +113,8 @@ class TastyIgniterSensor(BinarySensorEntity):
     def is_on(self) -> bool:
         """Return the state."""
         order_data = self.coordinator.data["orders"]
-
-        if self._location_id in order_data:
+        
+        if order_data.get(self._location_id):
             return True
         else:
             return False
