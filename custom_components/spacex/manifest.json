@@ -1,0 +1,17 @@
+{
+  "domain": "tastyigniter",
+  "name": "TastyIgniter Notifications",
+  "config_flow": true,
+  "documentation": "https://github.com/djtimca/hatastyigniter",
+  "issue_tracker": "https://github.com/djtimca/hatastyigniter/issues",
+  "requirements": [
+    "tastyigniter==0.0.1"
+  ],
+  "ssdp": [],
+  "zeroconf": [],
+  "homekit": {},
+  "dependencies": [],
+  "codeowners": [
+    "@djtimca"
+  ]
+}
