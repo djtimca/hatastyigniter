@@ -48,22 +48,16 @@ class TastyIgniterSensor(BinarySensorEntity):
         ):
         """Initialize Entities."""
 
-        self._name = location["location_name"]
+        self._name = f"TI - {location['location_name']}"
         self._location_id = location["location_id"]
         self._unique_id = f"ti_{self._location_id}"
         self._state = None
         self._icon = icon
         self._device_identifier = device_identifier
         self.coordinator = coordinator
+        self._location = location
 
-        telephone = location["location_telephone"].replace("-","")
-        telephone = telephone.replace(" ","")
-        if len(telephone) == 10:
-            telephone = f"+1{telephone}"
-        else:
-            telephone = ""
-
-        self.attrs = {"phone":telephone}
+        self.attrs = {}
 
     @property
     def should_poll(self) -> bool:
@@ -93,6 +87,17 @@ class TastyIgniterSensor(BinarySensorEntity):
     @property
     def device_state_attributes(self):
         """Return the attributes."""
+        telephone = self._location["location_telephone"].replace("-","")
+        telephone = telephone.replace(" ","")
+        telephone = telephone.replace("(","")
+        telephone = telephone.replace(")","")
+        if len(telephone) == 10:
+            telephone = f"+1{telephone}"
+        else:
+            telephone = ""
+
+        self.attrs["phone"] = telephone
+
         return self.attrs
 
     @property
