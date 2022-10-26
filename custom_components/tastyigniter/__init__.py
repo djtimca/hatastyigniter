@@ -121,7 +121,7 @@ class TastyIgniterCoordinator(DataUpdateCoordinator):
             location_names = {}
 
             for location in locations:
-                location_names[locations["location_id"]] = locations["location_name"]
+                location_names[location["location_id"]] = location["location_name"]
 
             for order in received_orders:
                 """Structure the dict for easy alerts."""
