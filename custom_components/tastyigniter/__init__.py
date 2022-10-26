@@ -118,6 +118,10 @@ class TastyIgniterCoordinator(DataUpdateCoordinator):
             current_orders = self._open_orders
             r_orders = {}
             self._open_orders = {}
+            location_names = {}
+
+            for location in locations:
+                location_names[locations["location_id"]] = locations["location_name"]
 
             for order in received_orders:
                 """Structure the dict for easy alerts."""
@@ -128,7 +132,7 @@ class TastyIgniterCoordinator(DataUpdateCoordinator):
                     event_data = {
                         "order_id": order["order_id"],
                         "location_id": order["location_id"],
-                        "location_name": locations[order["location_id"]],
+                        "location_name": location_names[order["location_id"]],
                         "order_type": order["order_type"],
                         "order_time_is_asap": order["order_time_is_asap"],
                     }
