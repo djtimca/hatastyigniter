@@ -99,6 +99,7 @@ class TastyIgniterCoordinator(DataUpdateCoordinator):
     ):
         """Initialize the global TastyIgniter data updater."""
         self.api = api
+        self._open_orders = {}
 
         super().__init__(
             hass = hass,
@@ -113,11 +114,27 @@ class TastyIgniterCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Updating the coordinator data.")
             locations = await self.api.get_locations()
             received_orders = await self.api.get_received_orders()
+            
+            current_orders = self._open_orders
             r_orders = {}
+            self._open_orders = {}
 
             for order in received_orders:
                 """Structure the dict for easy alerts."""
                 r_orders[order["location_id"]] = order
+                self._open_orders[order["order_id"]] = order
+
+                if not current_orders.get(order["order_id"]):
+                    event_data = {
+                        "order_id": order["order_id"],
+                        "location_id": order["location_id"],
+                        "location_name": locations[order["location_id"]],
+                        "order_type": order["order_type"],
+                        "order_time_is_asap": order["order_time_is_asap"],
+                    }
+
+                    self.hass.bus.async_fire("tastyigniter_neworder", event_data)
+
 
             return {
                 "locations": locations,
