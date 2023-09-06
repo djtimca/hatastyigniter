@@ -96,7 +96,17 @@ class TastyIgniterSensor(BinarySensorEntity):
         else:
             telephone = ""
 
+        escalation_phone = str(self._location.get('location_escalation_phone')).replace("-","")
+        escalation_phone = escalation_phone.replace(" ","")
+        escalation_phone = escalation_phone.replace("(","")
+        escalation_phone = escalation_phone.replace(")","")
+        if len(escalation_phone) == 10:
+            escalation_phone = f"+1{escalation_phone}"
+        else:
+            escalation_phone = ""
+
         self.attrs["phone"] = telephone
+        self.attrs["escalation_phone"] = escalation_phone
 
         return self.attrs
 
