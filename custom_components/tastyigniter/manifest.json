@@ -5,7 +5,7 @@
   "documentation": "https://github.com/djtimca/hatastyigniter",
   "issue_tracker": "https://github.com/djtimca/hatastyigniter/issues",
   "requirements": [
-    "tastyigniter==0.0.5"
+    "tastyigniter==0.0.6"
   ],
   "ssdp": [],
   "zeroconf": [],
@@ -14,5 +14,5 @@
   "codeowners": [
     "@djtimca"
   ],
-  "version": "0.0.6"
+  "version": "0.0.7"
 }
