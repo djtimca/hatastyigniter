@@ -114,7 +114,7 @@ class TastyIgniterSensor(BinarySensorEntity):
         is_open = False
 
         if (today_details["status"] == "1"):
-            hours = today_details.get("hours",[])
+            hours = today_details.get("hours","")
             hours_list = hours.split(",")
             if (len(hours_list) > 0):
                 for hours in hours_list:
