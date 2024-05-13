@@ -114,15 +114,16 @@ class TastyIgniterSensor(BinarySensorEntity):
         is_open = False
 
         if (today_details["status"] == "1"):
-            hours = today_details["hours"]
+            hours = today_details.get("hours",[])
             hours_list = hours.split(",")
-            for hours in hours_list:
-                today_hours = hours.split("-")
-                open_hour = datetime.datetime.strptime(today_hours[0],"%H:%M").time()
-                close_hour = datetime.datetime.strptime(today_hours[1],"%H:%M").time()
-                current_time = datetime.datetime.now(pytz.timezone("America/Toronto")).time()
-                if (current_time > open_hour and current_time < close_hour):
-                    is_open=True
+            if (len(hours_list) > 0):
+                for hours in hours_list:
+                    today_hours = hours.split("-")
+                    open_hour = datetime.datetime.strptime(today_hours[0],"%H:%M").time()
+                    close_hour = datetime.datetime.strptime(today_hours[1],"%H:%M").time()
+                    current_time = datetime.datetime.now(pytz.timezone("America/Toronto")).time()
+                    if (current_time > open_hour and current_time < close_hour):
+                        is_open=True
 
         self.attrs["is_open"] = is_open
 
