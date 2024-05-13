@@ -2,6 +2,7 @@
 
 import logging
 import datetime
+import pytz
 
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
