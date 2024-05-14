@@ -112,37 +112,38 @@ class TastyIgniterSensor(BinarySensorEntity):
         open_hours = self._location["options"].get("hours",{}).get("opening",{}).get("flexible",[])
         is_open = False
     
-        today_details = {}
-        for hours_detail in open_hours:
-            if (hours_detail["day"] == str(datetime.datetime.today().weekday())):
-                today_details = hours_detail
-        
-        if (today_details.get("status","0") == "1"):
-            hours = today_details.get("hours","")
-            open_hour = datetime.datetime.strptime(today_details.get("open","00:00"),"%H:%M").time()
-            close_hour = datetime.datetime.strptime(today_details.get("close","00:00"),"%H:%M").time()
-            current_time = datetime.datetime.now(pytz.timezone("America/Toronto")).time()
+        if self._location["location_status"] == True:
+            today_details = {}
+            for hours_detail in open_hours:
+                if (hours_detail["day"] == str(datetime.datetime.today().weekday())):
+                    today_details = hours_detail
+            
+            if (today_details.get("status","0") == "1"):
+                hours = today_details.get("hours","")
+                open_hour = datetime.datetime.strptime(today_details.get("open","00:00"),"%H:%M").time()
+                close_hour = datetime.datetime.strptime(today_details.get("close","00:00"),"%H:%M").time()
+                current_time = datetime.datetime.now(pytz.timezone("America/Toronto")).time()
 
-            if (hours != ""):
-                hours_list = hours.split(",")
-                if (len(hours_list) > 0):
-                    for hours in hours_list:
-                        today_hours = hours.split("-")
-                        open_hour = datetime.datetime.strptime(today_hours[0],"%H:%M").time()
-                        close_hour = datetime.datetime.strptime(today_hours[1],"%H:%M").time()
-                        if (open_hour < close_hour):
-                            if (current_time >= open_hour and current_time <= close_hour):
-                                is_open=True
-                        else:
-                            if not (current_time >= close_hour and current_time <= open_hour):
-                                is_open=True
-            else:
-                if (open_hour < close_hour):
-                    if (current_time >= open_hour and current_time <= close_hour):
-                        is_open=True
+                if (hours != ""):
+                    hours_list = hours.split(",")
+                    if (len(hours_list) > 0):
+                        for hours in hours_list:
+                            today_hours = hours.split("-")
+                            open_hour = datetime.datetime.strptime(today_hours[0],"%H:%M").time()
+                            close_hour = datetime.datetime.strptime(today_hours[1],"%H:%M").time()
+                            if (open_hour < close_hour):
+                                if (current_time >= open_hour and current_time <= close_hour):
+                                    is_open=True
+                            else:
+                                if not (current_time >= close_hour and current_time <= open_hour):
+                                    is_open=True
                 else:
-                    if not (current_time >= close_hour and current_time <= open_hour):
-                        is_open=True
+                    if (open_hour < close_hour):
+                        if (current_time >= open_hour and current_time <= close_hour):
+                            is_open=True
+                    else:
+                        if not (current_time >= close_hour and current_time <= open_hour):
+                            is_open=True
 
         self.attrs["is_open"] = is_open
 
