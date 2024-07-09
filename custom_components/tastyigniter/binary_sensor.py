@@ -107,6 +107,7 @@ class TastyIgniterSensor(BinarySensorEntity):
             escalation_phone = ""
 
         self.attrs["phone"] = telephone
+        self.attrs["telephone_extension"] = self._location.get('telephone_extension')
         self.attrs["escalation_phone"] = escalation_phone
 
         open_hours = self._location["options"].get("hours",{}).get("opening",{}).get("flexible",[])
