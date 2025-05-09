@@ -2,7 +2,7 @@
 
 import logging
 import datetime
-import pytz
+from homeassistant.util import dt
 
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -27,6 +27,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     for location in coordinator.data["locations"]:
         sensors.append(
             TastyIgniterSensor(
+                hass,
                 coordinator,
                 location,
                 "mdi:food",
@@ -42,6 +43,7 @@ class TastyIgniterSensor(BinarySensorEntity):
 
     def __init__(
         self, 
+        hass,
         coordinator: TastyIgniterCoordinator, 
         location: dict,
         icon: str,
@@ -49,6 +51,7 @@ class TastyIgniterSensor(BinarySensorEntity):
         ):
         """Initialize Entities."""
 
+        self.hass = hass
         self._name = f"TI - {location['location_name']}"
         self._location_id = location["location_id"]
         self._unique_id = f"ti_{self._location_id}"
@@ -57,8 +60,12 @@ class TastyIgniterSensor(BinarySensorEntity):
         self._device_identifier = device_identifier
         self.coordinator = coordinator
         self._location = location
-
-        self.attrs = {}
+        self._last_update_time = None
+        self._cached_is_open = False
+        self._cached_attrs = {}
+        
+        # Pre-process static attributes that don't change frequently
+        self._process_phone_attributes()
 
     @property
     def should_poll(self) -> bool:
@@ -85,9 +92,9 @@ class TastyIgniterSensor(BinarySensorEntity):
         """Return the icon for this entity."""
         return self._icon
 
-    @property
-    def extra_state_attributes(self):
-        """Return the attributes."""
+    def _process_phone_attributes(self):
+        """Process phone numbers once during initialization."""
+        # Process telephone
         telephone = self._location["location_telephone"].replace("-","")
         telephone = telephone.replace(" ","")
         telephone = telephone.replace("(","")
@@ -96,8 +103,9 @@ class TastyIgniterSensor(BinarySensorEntity):
             telephone = f"+1{telephone}"
         else:
             telephone = ""
-
-        escalation_phone = str(self._location.get('location_escalation_phone')).replace("-","")
+            
+        # Process escalation phone
+        escalation_phone = str(self._location.get('location_escalation_phone', "")).replace("-","")
         escalation_phone = escalation_phone.replace(" ","")
         escalation_phone = escalation_phone.replace("(","")
         escalation_phone = escalation_phone.replace(")","")
@@ -105,50 +113,86 @@ class TastyIgniterSensor(BinarySensorEntity):
             escalation_phone = f"+1{escalation_phone}"
         else:
             escalation_phone = ""
-
-        self.attrs["phone"] = telephone
-        self.attrs["telephone_extension"] = self._location.get('telephone_extension')
-        self.attrs["escalation_phone"] = escalation_phone
-
-        open_hours = self._location["options"].get("hours",{}).get("opening",{}).get("flexible",[])
-        is_open = False
-    
-        if self._location["location_status"] == True:
-            today_details = {}
-            for hours_detail in open_hours:
-                if (hours_detail["day"] == str(datetime.datetime.today().weekday())):
-                    today_details = hours_detail
             
-            if (today_details.get("status","0") == "1"):
+        # Store in cached attributes
+        self._cached_attrs["phone"] = telephone
+        self._cached_attrs["telephone_extension"] = self._location.get('telephone_extension')
+        self._cached_attrs["escalation_phone"] = escalation_phone
+    
+    def _check_if_open(self):
+        """Check if the location is currently open."""
+        # Only recalculate every 5 minutes to improve performance
+        current_time = dt.now(self.hass.config.time_zone)
+        
+        # If we've checked in the last 5 minutes, return cached result
+        if (self._last_update_time is not None and 
+            (current_time - self._last_update_time).total_seconds() < 300):
+            return self._cached_is_open
+            
+        # Update the last check time
+        self._last_update_time = current_time
+        is_open = False
+        
+        # Only check if location is active
+        if self._location["location_status"] == True:
+            open_hours = self._location["options"].get("hours",{}).get("opening",{}).get("flexible",[])
+            today_details = {}
+            
+            # Find today's hours
+            weekday = str(current_time.weekday())
+            for hours_detail in open_hours:
+                if hours_detail["day"] == weekday:
+                    today_details = hours_detail
+                    break
+            
+            # Check if open today
+            if today_details.get("status","0") == "1":
+                current_time = current_time.time()
                 hours = today_details.get("hours","")
-                open_hour = datetime.datetime.strptime(today_details.get("open","00:00"),"%H:%M").time()
-                close_hour = datetime.datetime.strptime(today_details.get("close","00:00"),"%H:%M").time()
-                current_time = datetime.datetime.now(pytz.timezone("America/Toronto")).time()
-
-                if (hours != ""):
+                
+                if hours:
+                    # Multiple time ranges
                     hours_list = hours.split(",")
-                    if (len(hours_list) > 0):
-                        for hours in hours_list:
-                            today_hours = hours.split("-")
+                    for hour_range in hours_list:
+                        today_hours = hour_range.split("-")
+                        if len(today_hours) == 2:
                             open_hour = datetime.datetime.strptime(today_hours[0],"%H:%M").time()
                             close_hour = datetime.datetime.strptime(today_hours[1],"%H:%M").time()
-                            if (open_hour < close_hour):
-                                if (current_time >= open_hour and current_time <= close_hour):
-                                    is_open=True
-                            else:
+                            
+                            if open_hour < close_hour:
+                                if current_time >= open_hour and current_time <= close_hour:
+                                    is_open = True
+                                    break
+                            else:  # Handles overnight hours (e.g., 22:00-02:00)
                                 if not (current_time >= close_hour and current_time <= open_hour):
-                                    is_open=True
+                                    is_open = True
+                                    break
                 else:
-                    if (open_hour < close_hour):
-                        if (current_time >= open_hour and current_time <= close_hour):
-                            is_open=True
-                    else:
+                    # Single time range from open/close fields
+                    open_hour = datetime.datetime.strptime(today_details.get("open","00:00"),"%H:%M").time()
+                    close_hour = datetime.datetime.strptime(today_details.get("close","00:00"),"%H:%M").time()
+                    
+                    if open_hour < close_hour:
+                        if current_time >= open_hour and current_time <= close_hour:
+                            is_open = True
+                    else:  # Handles overnight hours
                         if not (current_time >= close_hour and current_time <= open_hour):
-                            is_open=True
-
-        self.attrs["is_open"] = is_open
-
-        return self.attrs
+                            is_open = True
+        
+        # Cache the result
+        self._cached_is_open = is_open
+        return is_open
+    
+    @property
+    def extra_state_attributes(self):
+        """Return the attributes."""
+        # Start with the cached static attributes
+        attributes = dict(self._cached_attrs)
+        
+        # Add the dynamic is_open attribute
+        attributes["is_open"] = self._check_if_open()
+        
+        return attributes
 
     @property
     def device_info(self):
