@@ -122,7 +122,9 @@ class TastyIgniterSensor(BinarySensorEntity):
     def _check_if_open(self):
         """Check if the location is currently open."""
         # Only recalculate every 5 minutes to improve performance
-        current_time = dt.now(self.hass.config.time_zone)
+        # Get the timezone object from the string using dt.get_time_zone
+        tz = dt.get_time_zone(self.hass.config.time_zone)
+        current_time = dt.now(tz)
         
         # If we've checked in the last 5 minutes, return cached result
         if (self._last_update_time is not None and 
