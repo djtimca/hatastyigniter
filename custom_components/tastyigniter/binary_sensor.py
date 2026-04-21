@@ -52,7 +52,8 @@ class TastyIgniterSensor(BinarySensorEntity):
         """Initialize Entities."""
 
         self.hass = hass
-        self._name = f"TI - {location['location_name']}"
+        self._attr_name = location['location_name']
+        self._attr_has_entity_name = False
         self._location_id = location["location_id"]
         self._unique_id = f"ti_{self._location_id}"
         self._state = None
@@ -81,11 +82,6 @@ class TastyIgniterSensor(BinarySensorEntity):
     def unique_id(self):
         """Return the unique Home Assistant friendly identifier for this entity."""
         return self._unique_id
-
-    @property
-    def name(self):
-        """Return the friendly name of this entity."""
-        return self._name
 
     @property
     def icon(self):
