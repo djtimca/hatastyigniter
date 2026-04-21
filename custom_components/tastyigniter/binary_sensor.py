@@ -41,8 +41,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class TastyIgniterSensor(BinarySensorEntity):
     """Defines a TastyIgniter Binary sensor."""
 
-    _attr_has_entity_name = False
-
     def __init__(
         self, 
         hass,
